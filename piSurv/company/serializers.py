@@ -18,9 +18,10 @@ class QuestionsSerializer(serializers.ModelSerializer):
         fields = ["id",]
 
 class SurveySerializer(serializers.ModelSerializer):
-    question = serializers.PrimaryKeyRelatedField(many=True, read_only =True)
+    # question_set = serializers.PrimaryKeyRelatedField(many=True, read_only =True)
+    question_set = QuestionsSerializer(many=True)
     class Meta:
         model = Survey
-        fields = ["id","title","question"]
+        fields = ["id","title","question_set"]
 
     
