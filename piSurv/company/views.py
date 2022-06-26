@@ -1,6 +1,6 @@
 from django.shortcuts import render,redirect
 from django.contrib.auth.models import User,auth
-from .serializers import ProfileSerializers,QuestionsSerializer,TestModelSerializer,SurveySerializer,UserSerializer
+from .serializers import ProfileSerializers,QuestionsSerializer, SubmittedQuestionSerializer,TestModelSerializer,SurveySerializer,UserSerializer
 from .models import Profile,Question,TestModel,Survey
 from rest_framework.permissions import IsAuthenticated,IsAuthenticatedOrReadOnly,IsAdminUser
 from django.http import JsonResponse,HttpResponse
@@ -13,23 +13,43 @@ from rest_framework import viewsets
 from rest_framework.authentication import TokenAuthentication
 
 
+class SubmittedDataViewset(viewsets.ModelViewSet):
+    # permission_classes = [IsAuthenticatedOrReadOnly]
+    # permission_classes = [IsAuthenticated]
+    authentication_classes = (TokenAuthentication,)
+    queryset = Survey.objects.all()
+    serializer_class = SubmittedQuestionSerializer
 
- 
+    def perform_create(self,serializer):
+        user= self.request.user
+        survey = "check"
+        serializer.save(user=user)
+        # survey_object = Survey.objects.get(title=survey)
+        # serializer.save(user=user)
+        # serializer.save(survey=survey_object)
+
+
+
+
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
 class SurveyList(viewsets.ModelViewSet):
-    queryset = Survey.objects.all()
-    # permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAuthenticatedOrReadOnly]
     # permission_classes = [IsAuthenticated]
     authentication_classes = (TokenAuthentication,)
     serializer_class = SurveySerializer
 
-    def perform_create(self, serializer):
-        user = self.request.user 
-        import pdb; pdb.set_trace()
+    def perform_create(self,serializer):
+        user= self.request.user
         serializer.save(user=user)
+
+    def get_queryset(self):
+        user = User.objects.get(username=self.request.user.username)
+        survey = Survey.objects.filter(user=user)
+        return survey
+
 
 
     

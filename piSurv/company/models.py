@@ -39,28 +39,30 @@ class Survey(models.Model):
     def __str__(self):
         return self.title
 
+    def answers(self):
+        return Choice.objects.filter(question__survey=self).all()
+
+
 class Question(models.Model):
     survey = models.ForeignKey(Survey,on_delete=models.CASCADE)
     name_of_question = models.CharField(max_length=200)
     pub_date = models.DateField('date published',default=timezone.now)
+    choices = ArrayField(models.CharField)
 
     def __str__(self):
         return self.name_of_question
 
+    
+
 class Choice(models.Model):
     question = models.ForeignKey(Question,null=True,on_delete=models.CASCADE,)
     text = models.CharField(max_length=200)
+    user = models.ForeignKey(User,on_delete=models.SET_NULL,related_name="individual",null=True,blank=True)
+
 
     def __str__(self):
         return f'{self.question.name_of_question}:{self.text}'
 
-class SubmittedQuestion(models.Model):
-    survey = models.ForeignKey(Survey,on_delete=models.PROTECT)
-    user = models.ForeignKey(ProfileUser,on_delete=models.PROTECT)
-    answer = models.ManyToManyField(Choice)
-
-    def __str__(self):
-        return self.user.user.username
 
 class Wallet(models.Model):
     user = models.ForeignKey(User,on_delete=models.CASCADE)
