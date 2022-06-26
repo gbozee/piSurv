@@ -9,7 +9,7 @@ from .serializers import (
     SurveySerializer,
     UserSerializer,
 )
-from .models import Profile, Question, TestModel, Survey
+from .models import Choice, Profile, Question, TestModel, Survey
 from rest_framework.permissions import (
     IsAuthenticated,
     IsAuthenticatedOrReadOnly,
@@ -97,12 +97,14 @@ class AvailableSurveyList(viewsets.ViewSet):
         """This is the function responsible for creating a survey"""
         serializer = SurveySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        user = self.request.user
+        serializer.save(user=user)
         headers = {}
         return Response(
             serializer.data, status=status.HTTP_201_CREATED, headers=headers
         )
 
+    # the url to access this route is /<survery_id>/submit_answers
     @action(detail=True, methods=["post"])
     def submit_answers(self, request, pk=None):
         survey_instance = Survey.objects.get(pk=pk)
@@ -110,6 +112,15 @@ class AvailableSurveyList(viewsets.ViewSet):
         user = self.request.user
         submitted_answers.is_valid(raise_exception=True)
         submitted_answers.save(user=user)
-        return Response(
-            submitted_answers.data, status=status.HTTP_201_CREATED, headers={}
-        )
+        # Choice.objects.bulk_create([Choice(**x,user=user) for x in submitted_answers.data])
+        result = survey_instance.answers().filter(user=user)
+        serialized = ChoiceSerializer(result, many=True)
+        return Response(serialized.data, status=status.HTTP_201_CREATED, headers={})
+
+    @action(detail=True, methods=["get"])
+    def submitted_answers(self, request, pk=None):
+        survey_instance = Survey.objects.get(pk=pk)
+        user = self.request.user
+        result = survey_instance.answers().filter(user=user)
+        serialized = ChoiceSerializer(result, many=True)
+        return Response(serialized.data, status=status.HTTP_201_CREATED, headers={})

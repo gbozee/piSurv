@@ -1,54 +1,58 @@
 from doctest import debug
 from rest_framework import serializers
-from .models import Profile,Question,TestModel,Survey,Choice
-from django.contrib.auth.models import User,auth
+from .models import Profile, Question, TestModel, Survey, Choice
+from django.contrib.auth.models import User, auth
 from rest_framework.authtoken.views import Token
+
 
 class ProfileSerializers(serializers.ModelSerializer):
     class Meta:
         model = Profile
-        fields = ["user","company_name","company_img"]
+        fields = ["user", "company_name", "company_img"]
 
 
 class TestModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = TestModel
-        fields = ["name","book"]
+        fields = ["name", "book"]
+
 
 # class ChoiceSerializer(serializers.ModelSerializer):
 #     class Meta:
 #         model = Choice
 #         fields = ["id","text"]
 
+
 class QuestionsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
-        fields = ["id","name_of_question","choices","choices_array"]
+        fields = ["id", "name_of_question", "choices_array"]
 
     def create(self, validated_data):
-        survey = validated_data.pop("survey",None)
+        survey = validated_data.pop("survey", None)
         choice = validated_data["choices"]
         choice_list = choice["options"]
-        question = Question.objects.create(survey=survey,**validated_data)
+        question = Question.objects.create(survey=survey, **validated_data)
         for item in choice_list:
-            Choice.objects.create(question=question,text=item)
+            Choice.objects.create(question=question, text=item)
         return question
 
+
 class SurveySerializer(serializers.ModelSerializer):
-    question_set = serializers.PrimaryKeyRelatedField(many=True, read_only =True)
-    # question_set = QuestionsSerializer(many = True)
+    # question_set = serializers.PrimaryKeyRelatedField(many=True, read_only =True)
+    question_set = QuestionsSerializer(many=True)
 
     class Meta:
         model = Survey
-        fields = ["id","title","question_set"]
+        fields = ["id", "title", "question_set"]
 
     def create(self, validated_data):
-        user = validated_data.pop("user",None)
+        user = validated_data.pop("user", None)
         question_set_data = validated_data.pop("question_set")
-        survey  = Survey.objects.create(user=user,**validated_data)
-
-        for question_set in question_set_data:
-            Question.objects.create(survey=survey,**question_set_data[0])
+        if user:
+            survey = Survey.objects.create(user=user, **validated_data)
+            for question_set in question_set_data:
+                Question.objects.create(survey=survey, **question_set_data[0])
 
         # do this instead for efficiency
         # Question.objects.bulk_create([Question(survey=survey, **x) for x in question_set_data])
@@ -58,34 +62,37 @@ class SurveySerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["id","username","password"]
+        fields = ["id", "username", "password"]
 
-        extra_kwargs= {'password':{
-            'write_only':True,
-            'required':True
-        }}
+        extra_kwargs = {"password": {"write_only": True, "required": True}}
 
-    def create(self,validated_data):
+    def create(self, validated_data):
         user = User.objects.create_user(**validated_data)
         Token.objects.create(user=user)
         return user
 
+
 class ChoiceSerializer(serializers.ModelSerializer):
+    # question_id = serializers.PrimaryKeyRelatedField(queryset=Question.objects.all().values_list('id'))
+
     class Meta:
         model = Choice
-        fields = ['question_id','text']
+        fields = ["question", "text"]
+
 
 class SubmittedQuestionSerializer(serializers.ModelSerializer):
     answers = ChoiceSerializer(many=True)
+
     class Meta:
         model = Survey
-        fields = ["id","title", "answers"]
+        fields = ["id", "title", "answers"]
 
-    def create(self,validated_data):
+    def create(self, validated_data):
         user = validated_data.pop("user")
-        choices = Choice.objects.bulk_create([Choice(user=user,**x)for x in validated_data['answers']] )
+        choices = Choice.objects.bulk_create(
+            [Choice(user=user, **x) for x in validated_data["answers"]]
+        )
         breakpoint()
         return choices[0].question.survey
         # submitted_data  = SubmittedQuestion.objects.create(user=user,survey=survey,**validated_data)
         return submitted_data
-    

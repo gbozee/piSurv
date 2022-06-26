@@ -20,7 +20,7 @@ router.register("survey", SurveyList, basename="survey"),
 router.register("users", UserViewSet)
 router.register("submit", SubmittedDataViewset)
 router.register("question", QuestionList)
-router.register("available-survey", AvailableSurveyList)
+router.register("available-survey", AvailableSurveyList, basename="a-survey")
 
 urlpatterns = [
     path("company/", include(router.urls)),

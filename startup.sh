@@ -1,0 +1,2 @@
+export SECRET_KEY=jaoejaoiejoawjoijawoijwa
+source venv/bin/activate
