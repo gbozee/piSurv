@@ -1,3 +1,4 @@
+from array import array
 from django.db import models
 from django.contrib.auth import get_user_model
 from datetime import datetime
@@ -44,20 +45,27 @@ class Survey(models.Model):
 
 
 class Question(models.Model):
-    survey = models.ForeignKey(Survey,on_delete=models.CASCADE)
+    survey = models.ForeignKey(Survey,on_delete=models.CASCADE) # i dont think you should tie the question to the survey.
     name_of_question = models.CharField(max_length=200)
     pub_date = models.DateField('date published',default=timezone.now)
-    choices = ArrayField(models.CharField)
+    choices = models.JSONField(default=dict)
 
     def __str__(self):
         return self.name_of_question
 
-    
+    @property
+    def choices_array(self):
+        self.choices["options"]
+            
+
+   
 
 class Choice(models.Model):
-    question = models.ForeignKey(Question,null=True,on_delete=models.CASCADE,)
+    question = models.ForeignKey(Question,on_delete=models.CASCADE,related_name="question")
     text = models.CharField(max_length=200)
     user = models.ForeignKey(User,on_delete=models.SET_NULL,related_name="individual",null=True,blank=True)
+    # you can tie the answer to the survey here but we would work with your original modelling
+
 
 
     def __str__(self):
